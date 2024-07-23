@@ -113,6 +113,7 @@ else
         if ! echo "${_app_info}" | jq ".resultCount" | grep -qE '0|1'; then
             echo '[x] Wrong information was returned...'
             echo '[*] Skip this...'
+            i="$((i+1))"
             continue
         fi
         if echo "${_app_info}" | jq ".resultCount" | grep -q '1' ; then
