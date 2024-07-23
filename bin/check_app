@@ -1,0 +1,130 @@
+#!/bin/sh -
+
+
+readonly _command="${0##*/}"
+readonly _c_version='0.1.0'
+export LANG=en_US.UTF-8
+
+
+if [ -d '/proc/' ]; then
+    #openwrt not have ps -p
+    _now_sh="$(readlink "/proc/$$/exe")"
+    _now_sh="${_now_sh##*/}"
+else
+    #ios and macos not have "/proc/"
+    _now_sh="$(basename "$(echo "$(ps -p $$ -o command=)" | awk '{print $1}')")"
+fi
+if [ ! -t 0 ]; then
+    case "${_now_sh}" in
+        dash)
+            while IFS= read -r line || [ -n "$line" ]; do
+                _incoming="$_incoming$line"'\n'
+            done
+            _incoming="$(printf '%b\n' "${_incoming}")"
+        ;;
+        sh)
+            if readlink "$(which sh)" | grep -q 'dash$'; then
+                while IFS= read -r line || [ -n "$line" ]; do
+                    _incoming="$_incoming$line"'\n'
+                done
+                _incoming="$(printf '%b\n' "${_incoming}")"
+            else
+                read -d $'\0' -r _incoming
+            fi
+        ;;
+        *)
+            read -d $'\0' -r _incoming
+        ;;
+    esac
+fi
+
+_randnum(){
+    if [ -z "${2}" ]; then
+        tr -dc 'A-Za-z0-9' < /dev/urandom 2>>/dev/null | head -c "${1}"
+    else
+        tr -dc "${1}" < /dev/urandom 2>>/dev/null | head -c "${2}"
+    fi
+}
+
+_get_package_version(){
+    if [ "${1}" = 'sh' ]; then
+        _command2="$(readlink "$(which sh)")"
+        _command2="${_command2##*/}"
+    else
+        _command2="${1}"
+    fi
+    #If it is not Debian, return the unknown version directly
+    if which dpkg 2>>/dev/null 1>>/dev/null; then
+        if dpkg -s "${_command2}" 2>>/dev/null 1>>/dev/null; then
+            echo "${_command2}/$(dpkg -s "${_command2}" | grep '^Version: ' | sed 's#Version: ##')"
+        else
+            _command_p="$(which "${_command2}")"
+            if ! dpkg -S "${_command_p}" 2>>/dev/null 1>>/dev/null; then
+                echo "${_command2}/unknown"
+            else
+                _command_p="$(dpkg -S "${_command_p}")"
+                _command_p="${_command_p##*/}"
+                echo "${_command2}/$(dpkg -s "${_command_p}" | grep '^Version: ' | sed 's#Version: ##')"
+            fi
+        fi
+    else
+        echo "${_command2}/unknown"
+    fi
+    unset _command2 _command_p
+}
+
+_user_agent="$(_get_package_version 'curl') $(uname -s)/$(uname -r) $(_get_package_version "${_now_sh}") ${_command}/${_c_version}(shell script)"
+
+_remove_colon(){
+    if [ -n "${1}" ]; then
+        echo "${1}" | sed 's#^"##' | sed 's#"$##'
+    else
+        while IFS= read -r line || [ -n "$line" ]; do
+            _incoming="$_incoming$line"'\n'
+        done
+        _incoming="$(printf '%b\n' "${_incoming}")"
+        echo "${_incoming}" | sed 's#^"##' | sed 's#"$##'
+    fi
+    unset _incoming
+}
+
+_check(){
+    _area="${1%\.list*}"
+    _area="${_area##*\/}"
+    _id="${2}"
+    echo "${i}/${i_max} check: ${_area}/${_id}"
+    mkdir -p "./Recore/${_area}/"
+    if [ ! -f "./Recore/${_area}/${_id}.csv" ]; then
+        echo 'Version,id' >"./Recore/${_area}/${_id}.csv"
+    fi
+    _info="$(curl -s -L -H "user-agent: ${_user_agent}" "https://apps.apple.com/${_area}/app/id${_id}")"
+    _version="$(echo "${_info}" | grep 'whats-new__latest__version">' | sed -n '1p')"
+    _version="${_version%%</p>*}"
+    _version="${_version##*__version\">}"
+    _version="${_version##* }"
+    _version_id="$(echo "${_info}" | grep 'id="shoebox-ember-localizer">' | sed -n '1p')"
+    _version_id="${_version_id#*buyParams}"
+    _version_id="${_version_id%%buyParams*}"
+    _version_id="${_version_id#*ExtVrsId=}"
+    _version_id="${_version_id%%\\\",\\\"*}"
+    if ! grep -q "${_version},${_version_id}" "./Recore/${_area}/${_id}.csv"; then
+        echo "${_version},${_version_id}" >>"./Recore/${_area}/${_id}.csv"
+    fi
+    unset _area _id
+}
+
+i='1'
+i_max="$(find "./appid/" -type f | wc -l)"
+while [ "${i}" -le "${i_max}" ]; do
+    a='1'
+    a_max="$(cat "$(find "./appid/" -type f | sed -n "${i}p")" | wc -l)"
+    while [ "${a}" -le "${a_max}" ]; do
+        _sleep="$(_randnum '0-2' '1')$(_randnum '0-9' '1')"
+        echo "[*] wait \"${_sleep}s\""
+        sleep "${_sleep}"
+        unset _sleep
+        _check "$(find "./appid/" -type f | sed -n "${i}p")" "$(cat "$(find "./appid/" -type f | sed -n "${i}p")" | sed -n "${a}p")"
+        a="$((a+1))"
+    done
+    i="$((i+1))"
+done
