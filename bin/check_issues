@@ -96,7 +96,7 @@ if [ "${i_max}" = '0' ]; then
     echo '[*] not found issues...'
 else
     while [ "${i}" -le "${i_max}" ]; do
-        unset _url _issues_title _app_info
+        unset _url _issues_title _app_info _area _id
         _sleep="$(_randnum '0-2' '1')$(_randnum '0-9' '1')"
         echo "[*] wait \"${_sleep}s\""
         sleep "${_sleep}"
@@ -109,7 +109,7 @@ else
         _area="${_issues_body%%/app/*}"
         _area="${_area##*apps.apple.com/}"
         echo "[*] now check \"${_id}\" to \"apps.apple.com\"..."
-        _app_info="$(curl -s -L -H "user-agent: ${_user_agent}" "https://itunes.apple.com/${area}/lookup?id=${_id}" | jq '{resultCount: .resultCount, bundleId: .results[0].bundleId}')"
+        _app_info="$(curl -s -L -H "user-agent: ${_user_agent}" "https://itunes.apple.com/${_area}/lookup?id=${_id}" | jq '{resultCount: .resultCount, bundleId: .results[0].bundleId}')"
         if ! echo "${_app_info}" | jq ".resultCount" | grep -qE '0|1'; then
             echo '[x] Wrong information was returned...'
             echo '[*] Skip this...'
