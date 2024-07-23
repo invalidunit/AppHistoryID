@@ -2,7 +2,7 @@
 
 
 readonly _command="${0##*/}"
-readonly _c_version='0.1.0'
+readonly _c_version='0.1.1'
 export LANG=en_US.UTF-8
 
 
@@ -92,7 +92,7 @@ _check(){
     _area="${1%\.list*}"
     _area="${_area##*\/}"
     _id="${2}"
-    echo "${i}/${i_max} check: ${_area}/${_id}"
+    echo "${i}:${a}/${a_max} check: ${_area}/${_id}"
     mkdir -p "./Recore/${_area}/"
     if [ ! -f "./Recore/${_area}/${_id}.csv" ]; then
         echo 'Version,id' >"./Recore/${_area}/${_id}.csv"
