@@ -1,0 +1,73 @@
+name: "Record App History ID"
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '10 * * * *'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: install jq
+        run: |
+          sudo apt update >>/dev/null
+          sudo apt install jq -y
+
+      - name: install jo
+        run: |
+          sudo apt install gcc git automake autoconf -y
+          git clone 'https://github.com/jpmens/jo.git' '/tmp/jo'
+          echo 'cd /tmp/jo' >>/tmp/jo_install.sh
+          echo 'autoreconf -i' >>/tmp/jo_install.sh
+          echo './configure' >>/tmp/jo_install.sh
+          echo 'make check' >>/tmp/jo_install.sh
+          echo 'make install' >>/tmp/jo_install.sh
+          chmod -R 0755 '/tmp/jo_install.sh'
+          sudo '/tmp/jo_install.sh'
+          
+      - name: copy file
+        run: |
+          sudo cp -a './bin/check_issues' '/usr/bin/check_issues'
+          sudo cp -a './bin/check_app' '/usr/bin/check_app'
+          sudo chmod -R 0755 '/usr/bin/check_issues' '/usr/bin/check_app'
+
+      - name: check issues
+        if: success()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          check_issues
+          
+      - name: save new list if local change
+        if: success()
+        run: |
+          git config --global user.email 'action@github.com'
+          git config --global user.name 'GitHub Action'
+          git add .
+          if ! git diff --staged --exit-code; then
+            git commit -m 'Update app.list'
+            git push
+          fi
+
+      - name: get app history id
+        if: success()
+        run: |
+          check_app
+          
+      - name: save caches if local change
+        if: success()
+        run: |
+          git config --global user.email 'action@github.com'
+          git config --global user.name 'GitHub Action'
+          git add .
+          if ! git diff --staged --exit-code; then
+            git commit -m 'Update app history id record'
+            git push
+          fi
