@@ -2,7 +2,7 @@
 
 
 readonly _command="${0##*/}"
-readonly _c_version='0.1.1-2'
+readonly _c_version='0.1.2'
 export LANG=en_US.UTF-8
 
 
@@ -97,18 +97,20 @@ _check(){
     if [ ! -f "./Recore/${_area}/${_id}.csv" ]; then
         echo 'Version,id' >"./Recore/${_area}/${_id}.csv"
     fi
-    _info="$(curl -s -L -H "user-agent: ${_user_agent}" "https://apps.apple.com/${_area}/app/id${_id}")"
-    _version="$(echo "${_info}" | grep 'whats-new__latest__version">' | sed -n '1p')"
-    _version="${_version%%</p>*}"
-    _version="${_version##*__version\">}"
-    _version="${_version##* }"
-    _version_id="$(echo "${_info}" | grep 'id="shoebox-ember-localizer">' | sed -n '1p')"
-    _version_id="${_version_id#*buyParams}"
-    _version_id="${_version_id%%buyParams*}"
-    _version_id="${_version_id#*ExtVrsId=}"
-    _version_id="${_version_id%%\\\",\\\"*}"
-    if ! grep -q "${_version},${_version_id}" "./Recore/${_area}/${_id}.csv"; then
-        echo "${_version},${_version_id}" >>"./Recore/${_area}/${_id}.csv"
+    if [ curl --head --write-out '%{http_code}\n' --silent --output /dev/null -L "https://apps.apple.com/${_area}/app/id${_id}" = '200' ]; then
+        _info="$(curl -s -L -H "user-agent: ${_user_agent}" "https://apps.apple.com/${_area}/app/id${_id}")"
+        _version="$(echo "${_info}" | grep 'whats-new__latest__version">' | sed -n '1p')"
+        _version="${_version%%</p>*}"
+        _version="${_version##*__version\">}"
+        _version="${_version##* }"
+        _version_id="$(echo "${_info}" | grep 'id="shoebox-ember-localizer">' | sed -n '1p')"
+        _version_id="${_version_id#*buyParams}"
+        _version_id="${_version_id%%buyParams*}"
+        _version_id="${_version_id#*ExtVrsId=}"
+        _version_id="${_version_id%%\\\",\\\"*}"
+        if ! grep -q "${_version},${_version_id}" "./Recore/${_area}/${_id}.csv"; then
+            echo "${_version},${_version_id}" >>"./Recore/${_area}/${_id}.csv"
+        fi
     fi
     unset _area _id
 }
