@@ -2,7 +2,7 @@
 
 
 readonly _command="${0##*/}"
-readonly _c_version='0.1.2'
+readonly _c_version='0.1.3'
 export LANG=en_US.UTF-8
 
 
@@ -97,7 +97,7 @@ _check(){
     if [ ! -f "./Recore/${_area}/${_id}.csv" ]; then
         echo 'Version,id' >"./Recore/${_area}/${_id}.csv"
     fi
-    if [ curl --head --write-out '%{http_code}\n' --silent --output /dev/null -L "https://apps.apple.com/${_area}/app/id${_id}" = '200' ]; then
+    if [ "$(curl --head --write-out '%{http_code}\n' --silent --output /dev/null -L "https://apps.apple.com/${_area}/app/id${_id}")" = '200' ]; then
         _info="$(curl -s -L -H "user-agent: ${_user_agent}" "https://apps.apple.com/${_area}/app/id${_id}")"
         _version="$(echo "${_info}" | grep 'whats-new__latest__version">' | sed -n '1p')"
         _version="${_version%%</p>*}"
