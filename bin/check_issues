@@ -2,7 +2,7 @@
 
 
 readonly _command="${0##*/}"
-readonly _c_version='0.1.2-2'
+readonly _c_version='0.1.2-3'
 export LANG=en_US.UTF-8
 _info="$(curl -s -L -H 'Accept: application/vnd.github+json' -H "Authorization: Bearer ${GITHUB_TOKEN}" "https://api.github.com/repos/${GH_REPO}/issues?state=open")"
 
@@ -97,10 +97,10 @@ if [ "${i_max}" = '0' ]; then
 else
     while [ "${i}" -le "${i_max}" ]; do
         unset _url _issues_title _app_info _area _id
-        #_sleep="$(_randnum '0-2' '1')$(_randnum '0-9' '1')"
-        #echo "[*] wait \"${_sleep}s\""
-        #sleep "${_sleep}"
-        #unset _sleep
+        _sleep="$(_randnum '0-2' '1')$(_randnum '0-9' '1')"
+        echo "[*] wait \"${_sleep}s\""
+        sleep "${_sleep}"
+        unset _sleep
         _url="$(echo "${_info}" | jq ".[] | .url" | sed -n "${i}p" | _remove_colon)"
         echo "[*] now check: $(echo "${_info}" | jq ".[] | .html_url" | sed -n "${i}p" | _remove_colon)"
         _issues_body="$(echo "${_info}" | jq ".[] | .body" | sed -n "${i}p" | _remove_colon)"
