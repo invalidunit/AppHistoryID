@@ -2,7 +2,7 @@
 
 
 readonly _command="${0##*/}"
-readonly _c_version='0.1.3-2'
+readonly _c_version='0.1.3-3'
 export LANG=en_US.UTF-8
 
 
@@ -122,9 +122,10 @@ while [ "${i}" -le "${i_max}" ]; do
     a_max="$(cat "$(find "./appid/" -type f | sed -n "${i}p")" | wc -l)"
     while [ "${a}" -le "${a_max}" ]; do
         #_sleep="$(_randnum '0-2' '1')$(_randnum '0-9' '1')"
-        #echo "[*] wait \"${_sleep}s\""
-        #sleep "${_sleep}"
-        #unset _sleep
+        _sleep="$(_randnum '0-9' '1')"
+        echo "[*] wait \"${_sleep}s\""
+        sleep "${_sleep}"
+        unset _sleep
         _check "$(find "./appid/" -type f | sed -n "${i}p")" "$(cat "$(find "./appid/" -type f | sed -n "${i}p")" | sed -n "${a}p")"
         a="$((a+1))"
     done
