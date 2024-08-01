@@ -119,7 +119,6 @@ _check(){
             else
                 b="$((b+1))"
 	            if [ "${b}" = '10' ]; then
-	            	echo '10'
 	                break
 	            fi
             fi
