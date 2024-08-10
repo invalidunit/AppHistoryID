@@ -2,7 +2,7 @@
 
 
 readonly _command="${0##*/}"
-readonly _c_version='0.1.5-1'
+readonly _c_version='0.1.5-2'
 export LANG=en_US.UTF-8
 
 
@@ -122,7 +122,7 @@ _check(){
             fi
         done
     fi
-    unset _area _id b _info _version _version_id
+    unset _id b _info _version _version_id
 }
 
 i='1'
@@ -144,5 +144,6 @@ while [ "${i}" -le "${i_max}" ]; do
         a="$((a+1))"
     done
     rm -f "/tmp/$$"
+    unset _area
     i="$((i+1))"
 done
