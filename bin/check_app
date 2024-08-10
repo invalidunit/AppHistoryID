@@ -2,7 +2,7 @@
 
 
 readonly _command="${0##*/}"
-readonly _c_version='0.1.5'
+readonly _c_version='0.1.5-1'
 export LANG=en_US.UTF-8
 
 
@@ -131,7 +131,7 @@ while [ "${i}" -le "${i_max}" ]; do
     a='1'
     a_max="$(cat "$(find "./appid/" -type f | sed -n "${i}p")" | wc -l)"
     _area="$(find "./appid/" -type f | sed -n "${i}p")"
-    _area="${1%\.list*}"
+    _area="${_area%\.list*}"
     _area="${_area##*\/}"
     shuf "$(find "./appid/" -type f | sed -n "${i}p")" -o "/tmp/$$"
     while [ "${a}" -le "${a_max}" ]; do
