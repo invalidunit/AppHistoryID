@@ -2,7 +2,7 @@
 
 
 readonly _command="${0##*/}"
-readonly _c_version='0.1.5-2'
+readonly _c_version='0.1.6-b1'
 export LANG=en_US.UTF-8
 
 
@@ -129,6 +129,7 @@ i='1'
 i_max="$(find "./appid/" -type f | wc -l)"
 while [ "${i}" -le "${i_max}" ]; do
     a='1'
+    b='1'
     a_max="$(cat "$(find "./appid/" -type f | sed -n "${i}p")" | wc -l)"
     _area="$(find "./appid/" -type f | sed -n "${i}p")"
     _area="${_area%\.list*}"
@@ -140,10 +141,16 @@ while [ "${i}" -le "${i_max}" ]; do
         #echo "[*] wait \"${_sleep}s\""
         #sleep "${_sleep}"
         #unset _sleep
-        _check "$(cat "/tmp/$$" | sed -n "${a}p")"
+        _check "$(cat "/tmp/$$" | sed -n "${a}p")" &
         a="$((a+1))"
+        if [ "${b}" -le '10' ]; then
+            wait
+        else
+            unset b
+        fi
+        b="$((b+1))"
     done
     rm -f "/tmp/$$"
-    unset _area
+    unset _area a a_max b
     i="$((i+1))"
 done
