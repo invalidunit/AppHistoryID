@@ -2,7 +2,7 @@
 
 
 readonly _command="${0##*/}"
-readonly _c_version='0.1.5-3'
+readonly _c_version='0.1.5-4'
 export LANG=en_US.UTF-8
 
 
@@ -116,9 +116,9 @@ _check(){
                 break
             else
                 b="$((b+1))"
-	            if [ "${b}" = '10' ]; then
-	                break
-	            fi
+                if [ "${b}" = '10' ]; then
+                    break
+                fi
             fi
         done
     fi
@@ -133,10 +133,11 @@ while [ "${i}" -le "${i_max}" ]; do
     _area="$(find "./appid/" -type f | sed -n "${i}p")"
     _area="${_area%\.list*}"
     _area="${_area##*\/}"
-    mv "$(find "./appid/" -type f | sed -n "${i}p")" "$(find "./appid/" -type f | sed -n "${i}p").tmp"
-    sort -k2n "$(find "./appid/" -type f | sed -n "${i}p").tmp" | uniq "$(find "./appid/" -type f | sed -n "${i}p")"
-    rm -f "$(find "./appid/" -type f | sed -n "${i}p").tmp"
-    shuf "$(find "./appid/" -type f | sed -n "${i}p")" -o "/tmp/$$"
+    _file="$(find "./appid/" -type f | sed -n "${i}p")"
+    mv "${_file}" "${_file}.tmp"
+    sort -k2n "${_file}.tmp" | uniq "${_file}"
+    rm -f "${_file}"
+    shuf "${_file}" -o "/tmp/$$"
     while [ "${a}" -le "${a_max}" ]; do
         #_sleep="$(_randnum '0-2' '1')$(_randnum '0-9' '1')"
         #_sleep="$(_randnum '0-9' '1')"
@@ -147,6 +148,6 @@ while [ "${i}" -le "${i_max}" ]; do
         a="$((a+1))"
     done
     rm -f "/tmp/$$"
-    unset _area
+    unset _area _file
     i="$((i+1))"
 done
