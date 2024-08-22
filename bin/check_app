@@ -2,7 +2,7 @@
 
 
 readonly _command="${0##*/}"
-readonly _c_version='0.1.5-5'
+readonly _c_version='0.1.5-6'
 export LANG=en_US.UTF-8
 
 
@@ -135,8 +135,8 @@ while [ "${i}" -le "${i_max}" ]; do
     _area="${_area##*\/}"
     _file="$(find "./appid/" -type f | sed -n "${i}p")"
     mv "${_file}" "${_file}.tmp"
-    sort -k2n "${_file}.tmp" | uniq >"${_file}"
-    rm -f "${_file}"
+    sort -k2n "${_file}.tmp" | uniq >>"${_file}"
+    rm -f "${_file}.tmp"
     shuf "${_file}" -o "/tmp/$$"
     while [ "${a}" -le "${a_max}" ]; do
         #_sleep="$(_randnum '0-2' '1')$(_randnum '0-9' '1')"
