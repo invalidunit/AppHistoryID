@@ -7,7 +7,7 @@ on:
     - cron: '30 16 * * *'
 
 jobs:
-  build:
+  save_id :
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -72,16 +72,6 @@ jobs:
             git commit -m 'Update app history id record'
             git push
           fi
-          
-      - name: download remove_all_actions
-        run: |
-          sudo curl -L -o '/usr/bin/remove_all_actions' 'https://raw.githubusercontent.com/invalidunit/action/main/remove_all_actions'
-          sudo chmod -R 0755 '/usr/bin/remove_all_actions'
 
-      - name: remove all old actions
-        if: success()
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_REPO: ${{ github.repository }}
-        run: |
-          remove_all_actions
+  remove_all_old_actions:
+    uses: invalidunit/action/.github/workflows/remove_all_actions.yml@main
