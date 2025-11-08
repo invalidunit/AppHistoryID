@@ -2,7 +2,9 @@
 
 
 readonly _command="${0##*/}"
-readonly _c_version='0.1.5-6'
+readonly _c_version='0.2.3'
+_authorization='Bearer eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IlU4UlRZVjVaRFMifQ.eyJpc3MiOiI3TktaMlZQNDhaIiwiaWF0IjoxNzYyMjA4NTM1LCJleHAiOjE3Njk0NjYxMzUsInJvb3RfaHR0cHNfb3JpZ2luIjpbImFwcGxlLmNvbSJdfQ.WlzTtQi3vqVVcYUfRzXBSYEfvOMAFjcEhMuBPiS2gGqDEh5nPswnPkQ_H69FeXKjFsnCHahjSHVtojhNwNVU_g'
+echo "version: ${_c_version}"
 export LANG=en_US.UTF-8
 
 
@@ -95,34 +97,15 @@ _check(){
     if [ ! -f "./Recore/${_area}/${_id}.csv" ]; then
         echo 'Version,id' >"./Recore/${_area}/${_id}.csv"
     fi
-    if [ "$(curl --head --write-out '%{http_code}\n' --silent --output /dev/null -L "https://apps.apple.com/${_area}/app/id${_id}")" = '200' ]; then
-        b='1'
-        while [ '1' -le '2' ]; do
-            _info="$(curl -s -L -H "user-agent: ${_user_agent}" "https://apps.apple.com/${_area}/app/id${_id}")"
-            if [ $? = '0' ]; then
-                _info="$(curl -s -L -H "user-agent: ${_user_agent}" "https://apps.apple.com/${_area}/app/id${_id}")"
-                _version="$(echo "${_info}" | grep 'whats-new__latest__version">' | sed -n '1p')"
-                _version="${_version%%</p>*}"
-                _version="${_version##*__version\">}"
-                _version="${_version##* }"
-                _version_id="$(echo "${_info}" | grep 'id="shoebox-ember-localizer">' | sed -n '1p')"
-                _version_id="${_version_id#*buyParams}"
-                _version_id="${_version_id%%buyParams*}"
-                _version_id="${_version_id#*ExtVrsId=}"
-                _version_id="${_version_id%%\\\",\\\"*}"
-                if ! grep -q "${_version},${_version_id}" "./Recore/${_area}/${_id}.csv"; then
-                    echo "${_version},${_version_id}" >>"./Recore/${_area}/${_id}.csv"
-                fi
-                break
-            else
-                b="$((b+1))"
-                if [ "${b}" = '10' ]; then
-                    break
-                fi
-            fi
-        done
+    _info="$(curl --max-time 30 -s -L -H "user-agent: ${_user_agent}" -H 'accept: */*' -H "authorization: ${_authorization}" -H 'origin: https://apps.apple.com' "https://amp-api-edge.apps.apple.com/v1/catalog/${_area}/apps/${_id}?platform=iphone&additionalPlatforms=appletv%2Cipad%2Ciphone%2Cmac%2CrealityDevice%2Cwatch&extend=accessibility%2CaccessibilityDetails%2CageRating%2CbackgroundAssetsInfo%2CbackgroundAssetsInfoWithOptional%2CcustomArtwork%2CcustomDeepLink%2CcustomIconArtwork%2Cdescription%2CexpectedReleaseDateDisplayFormat%2CfileSizeByDevice%2CgameDisplayName%2CiconArtwork%2CinstallSizeByDeviceInBytes%2CminiGamesDeepLink%2CminimumOSVersion%2CremoteControllerRequirement%2CrequirementsByDeviceFamily%2CversionHistory&include%5Bapps%5D=app-events&availableIn%5Bapp-events%5D=future&sparseLimit%5Bapps%3Acustomers-also-bought-apps%5D=0&sparseLimit%5Bapps%3Adeveloper-other-apps%5D=0&sparseLimit%5Bapps%3Arelated-editorial-items%5D=0&limit%5Breviews%5D=1")"
+    if printf '%s\n' "${_info}" | jq 2>>/dev/null 1>>/dev/null; then
+        _version="$(printf '%s\n' "${_info}" | jq ".data[].attributes.platformAttributes.ios.versionHistory[0].versionDisplay" | _remove_colon)"
+        _version_id="$(printf '%s\n' "${_info}" | jq ".data[].attributes.platformAttributes.ios.externalVersionId" | _remove_colon)"
+        if ! grep -q "${_version},${_version_id}" "./Recore/${_area}/${_id}.csv" 2>>/dev/null; then
+            echo "${_version},${_version_id}" >>"./Recore/${_area}/${_id}.csv"
+        fi
     fi
-    unset _id b _info _version _version_id
+    unset _id _info _version _version_id
 }
 
 i='1'
@@ -140,10 +123,10 @@ while [ "${i}" -le "${i_max}" ]; do
     shuf "${_file}" -o "/tmp/$$"
     while [ "${a}" -le "${a_max}" ]; do
         #_sleep="$(_randnum '0-2' '1')$(_randnum '0-9' '1')"
-        #_sleep="$(_randnum '0-9' '1')"
-        #echo "[*] wait \"${_sleep}s\""
-        #sleep "${_sleep}"
-        #unset _sleep
+        _sleep="$(_randnum '0-9' '1')"
+        echo "[*] wait \"${_sleep}s\"..."
+        sleep "${_sleep}"
+        unset _sleep
         _check "$(cat "/tmp/$$" | sed -n "${a}p")"
         a="$((a+1))"
     done
