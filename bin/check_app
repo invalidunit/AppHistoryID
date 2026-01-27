@@ -2,8 +2,8 @@
 
 
 readonly _command="${0##*/}"
-readonly _c_version='0.2.3'
-_authorization='Bearer eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IlU4UlRZVjVaRFMifQ.eyJpc3MiOiI3TktaMlZQNDhaIiwiaWF0IjoxNzYyMjA4NTM1LCJleHAiOjE3Njk0NjYxMzUsInJvb3RfaHR0cHNfb3JpZ2luIjpbImFwcGxlLmNvbSJdfQ.WlzTtQi3vqVVcYUfRzXBSYEfvOMAFjcEhMuBPiS2gGqDEh5nPswnPkQ_H69FeXKjFsnCHahjSHVtojhNwNVU_g'
+readonly _c_version='0.2.3-1'
+_authorization='Bearer eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IlU4UlRZVjVaRFMifQ.eyJpc3MiOiI3TktaMlZQNDhaIiwiaWF0IjoxNzY1NDc2ODYyLCJleHAiOjE3NzI3MzQ0NjIsInJvb3RfaHR0cHNfb3JpZ2luIjpbImFwcGxlLmNvbSJdfQ.Z3QyT824xnIeLyoENyCqvJ-LnRTLLnd8Oq-gqnosXujCEMIMyh6x3RhueZ3AYneIIggnZGszsPFTFKMmDOqm3w'
 echo "version: ${_c_version}"
 export LANG=en_US.UTF-8
 
