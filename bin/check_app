@@ -2,7 +2,7 @@
 
 
 readonly _command="${0##*/}"
-readonly _c_version='0.2.6-3'
+readonly _c_version='0.2.7'
 echo "version: ${_c_version}"
 export LANG=en_US.UTF-8
 
@@ -121,19 +121,17 @@ _check(){
     done
     unset t t_max
     if jq "." "${_tmp_file}" 2>>'/dev/null' 1>>/dev/null; then
-        _info="$(cat "${_tmp_file}")"
-    fi
-    echo '===================='
-    cat "${_tmp_file}"
-    echo '===================='
-    if printf '%s\n' "${_info}" | jq 2>>/dev/null 1>>/dev/null; then
-        _version="$(printf '%s\n' "${_info}" | jq ".data[].attributes.platformAttributes.ios.versionHistory[0].versionDisplay" | _remove_colon)"
-        _version_id="$(printf '%s\n' "${_info}" | jq ".data[].attributes.platformAttributes.ios.externalVersionId" | _remove_colon)"
-        if ! grep -q "${_version},${_version_id}" "./Recore/${_area}/${_id}.csv" 2>>/dev/null; then
-            echo "${_version},${_version_id}" >>"./Recore/${_area}/${_id}.csv"
+        if jq -r ".errors[].code" 2>>/dev/null | grep -q '^40400$' ; then
+            echo '[x] 40400'
+        else
+            _version="$(jq -r ".data[].attributes.platformAttributes.ios.versionHistory[0].versionDisplay" "${_tmp_file}")"
+            _version_id="$(jq -r ".data[].attributes.platformAttributes.ios.externalVersionId" "${_tmp_file}")"
+            if ! grep -q "${_version},${_version_id}" "./Recore/${_area}/${_id}.csv" 2>>/dev/null; then
+                echo "${_version},${_version_id}" >>"./Recore/${_area}/${_id}.csv"
+            fi
         fi
     fi
-    unset _id _info _version _version_id
+    unset _id _version _version_id
     rm -f "${_tmp_file}"
 }
 
