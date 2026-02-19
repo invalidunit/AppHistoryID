@@ -2,7 +2,7 @@
 
 
 readonly _command="${0##*/}"
-readonly _c_version='0.2.6-1'
+readonly _c_version='0.2.6-3'
 echo "version: ${_c_version}"
 export LANG=en_US.UTF-8
 
@@ -122,9 +122,10 @@ _check(){
     unset t t_max
     if jq "." "${_tmp_file}" 2>>'/dev/null' 1>>/dev/null; then
         _info="$(cat "${_tmp_file}")"
-    else
-        cat "${_tmp_file}"
     fi
+    echo '===================='
+    cat "${_tmp_file}"
+    echo '===================='
     if printf '%s\n' "${_info}" | jq 2>>/dev/null 1>>/dev/null; then
         _version="$(printf '%s\n' "${_info}" | jq ".data[].attributes.platformAttributes.ios.versionHistory[0].versionDisplay" | _remove_colon)"
         _version_id="$(printf '%s\n' "${_info}" | jq ".data[].attributes.platformAttributes.ios.externalVersionId" | _remove_colon)"
