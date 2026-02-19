@@ -2,7 +2,7 @@
 
 
 readonly _command="${0##*/}"
-readonly _c_version='0.2.4'
+readonly _c_version='0.2.6'
 echo "version: ${_c_version}"
 export LANG=en_US.UTF-8
 
@@ -105,7 +105,24 @@ _check(){
     if [ ! -f "./Recore/${_area}/${_id}.csv" ]; then
         echo 'Version,id' >"./Recore/${_area}/${_id}.csv"
     fi
-    _info="$(curl --max-time 30 -s -L -H "user-agent: ${_user_agent}" -H 'accept: */*' -H "authorization: ${_authorization}" -H 'origin: https://apps.apple.com' "https://amp-api-edge.apps.apple.com/v1/catalog/${_area}/apps/${_id}?platform=iphone&additionalPlatforms=appletv%2Cipad%2Ciphone%2Cmac%2CrealityDevice%2Cwatch&extend=accessibility%2CaccessibilityDetails%2CageRating%2CbackgroundAssetsInfo%2CbackgroundAssetsInfoWithOptional%2CcustomArtwork%2CcustomDeepLink%2CcustomIconArtwork%2Cdescription%2CexpectedReleaseDateDisplayFormat%2CfileSizeByDevice%2CgameDisplayName%2CiconArtwork%2CinstallSizeByDeviceInBytes%2CminiGamesDeepLink%2CminimumOSVersion%2CremoteControllerRequirement%2CrequirementsByDeviceFamily%2CversionHistory&include%5Bapps%5D=app-events&availableIn%5Bapp-events%5D=future&sparseLimit%5Bapps%3Acustomers-also-bought-apps%5D=0&sparseLimit%5Bapps%3Adeveloper-other-apps%5D=0&sparseLimit%5Bapps%3Arelated-editorial-items%5D=0&limit%5Breviews%5D=1")"
+    _tmp_file="/tmp/org.nan.$(_randnum '20')"
+    t='0'
+    t_max='9'
+    while [ "${t}" -le "${t_max}" ]; do
+        curl --max-time 30 -s -L -o "${_tmp_file}" -H "user-agent: ${_user_agent}" -H 'accept: */*' -H "authorization: ${_authorization}" -H 'origin: https://apps.apple.com' "https://amp-api-edge.apps.apple.com/v1/catalog/${_area}/apps/${_id}?platform=iphone&additionalPlatforms=appletv%2Cipad%2Ciphone%2Cmac%2CrealityDevice%2Cwatch&extend=accessibility%2CaccessibilityDetails%2CageRating%2CbackgroundAssetsInfo%2CbackgroundAssetsInfoWithOptional%2CcustomArtwork%2CcustomDeepLink%2CcustomIconArtwork%2Cdescription%2CexpectedReleaseDateDisplayFormat%2CfileSizeByDevice%2CgameDisplayName%2CiconArtwork%2CinstallSizeByDeviceInBytes%2CminiGamesDeepLink%2CminimumOSVersion%2CremoteControllerRequirement%2CrequirementsByDeviceFamily%2CversionHistory&include%5Bapps%5D=app-events&availableIn%5Bapp-events%5D=future&sparseLimit%5Bapps%3Acustomers-also-bought-apps%5D=0&sparseLimit%5Bapps%3Adeveloper-other-apps%5D=0&sparseLimit%5Bapps%3Arelated-editorial-items%5D=0&limit%5Breviews%5D=1"
+        if grep -qi 'API capacity exceeded' "${_tmp_file}"; then
+            echo '[x] API capacity exceeded'
+            sleep 1
+            t="$((t+1))"
+            echo "[${t}/${t_max}] now retry"
+        else
+            break
+        fi
+    done
+    unset t t_max
+    if jq "." "${_tmp_file}" 2>>'/dev/null' 1>>/dev/null; then
+        _info="$(cat "${_tmp_file}")"
+    fi
     if printf '%s\n' "${_info}" | jq 2>>/dev/null 1>>/dev/null; then
         _version="$(printf '%s\n' "${_info}" | jq ".data[].attributes.platformAttributes.ios.versionHistory[0].versionDisplay" | _remove_colon)"
         _version_id="$(printf '%s\n' "${_info}" | jq ".data[].attributes.platformAttributes.ios.externalVersionId" | _remove_colon)"
@@ -114,6 +131,7 @@ _check(){
         fi
     fi
     unset _id _info _version _version_id
+    rm -f "${_tmp_file}"
 }
 
 i='1'
