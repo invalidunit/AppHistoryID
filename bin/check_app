@@ -2,7 +2,7 @@
 
 
 readonly _command="${0##*/}"
-readonly _c_version='0.2.7'
+readonly _c_version='0.2.8'
 echo "version: ${_c_version}"
 export LANG=en_US.UTF-8
 
@@ -17,147 +17,133 @@ fi
 
 
 if [ -d '/proc/' ]; then
-    #openwrt not have ps -p
-    _now_sh="$(readlink "/proc/$$/exe")"
-    _now_sh="${_now_sh##*/}"
+	#openwrt not have ps -p
+	_now_sh="$(readlink "/proc/$$/exe")"
+	_now_sh="${_now_sh##*/}"
 else
-    #ios and macos not have "/proc/"
-    _now_sh="$(basename "$(echo "$(ps -p $$ -o command=)" | awk '{print $1}')")"
+	#ios and macos not have "/proc/"
+	_now_sh="$(basename "$(echo "$(ps -p $$ -o command=)" | awk '{print $1}')")"
 fi
 if [ ! -t 0 ]; then
-    case "${_now_sh}" in
-        dash)
-            while IFS= read -r line || [ -n "$line" ]; do
-                _incoming="$_incoming$line"'\n'
-            done
-            _incoming="$(printf '%b\n' "${_incoming}")"
-        ;;
-        sh)
-            if readlink "$(which sh)" | grep -q 'dash$'; then
-                while IFS= read -r line || [ -n "$line" ]; do
-                    _incoming="$_incoming$line"'\n'
-                done
-                _incoming="$(printf '%b\n' "${_incoming}")"
-            else
-                read -d $'\0' -r _incoming
-            fi
-        ;;
-        *)
-            read -d $'\0' -r _incoming
-        ;;
-    esac
+	case "${_now_sh}" in
+		dash)
+			while IFS= read -r line || [ -n "$line" ]; do
+				_incoming="$_incoming$line"'\n'
+			done
+			_incoming="$(printf '%b\n' "${_incoming}")"
+		;;
+		sh)
+			if readlink "$(which sh)" | grep -q 'dash$'; then
+				while IFS= read -r line || [ -n "$line" ]; do
+					_incoming="$_incoming$line"'\n'
+				done
+				_incoming="$(printf '%b\n' "${_incoming}")"
+			else
+				read -d $'\0' -r _incoming
+			fi
+		;;
+		*)
+			read -d $'\0' -r _incoming
+		;;
+	esac
 fi
 
 _randnum(){
-    if [ -z "${2}" ]; then
-        tr -dc 'A-Za-z0-9' < /dev/urandom 2>>/dev/null | head -c "${1}"
-    else
-        tr -dc "${1}" < /dev/urandom 2>>/dev/null | head -c "${2}"
-    fi
+	if [ -z "${2}" ]; then
+		tr -dc 'A-Za-z0-9' < /dev/urandom 2>>/dev/null | head -c "${1}"
+	else
+		tr -dc "${1}" < /dev/urandom 2>>/dev/null | head -c "${2}"
+	fi
 }
 
 _get_package_version(){
-    if [ "${1}" = 'sh' ]; then
-        _command2="$(readlink "$(which sh)")"
-        _command2="${_command2##*/}"
-    else
-        _command2="${1}"
-    fi
-    #If it is not Debian, return the unknown version directly
-    if which dpkg 2>>/dev/null 1>>/dev/null; then
-        if dpkg -s "${_command2}" 2>>/dev/null 1>>/dev/null; then
-            echo "${_command2}/$(dpkg -s "${_command2}" | grep '^Version: ' | sed 's#Version: ##')"
-        else
-            _command_p="$(which "${_command2}")"
-            if ! dpkg -S "${_command_p}" 2>>/dev/null 1>>/dev/null; then
-                echo "${_command2}/unknown"
-            else
-                _command_p="$(dpkg -S "${_command_p}")"
-                _command_p="${_command_p##*/}"
-                echo "${_command2}/$(dpkg -s "${_command_p}" | grep '^Version: ' | sed 's#Version: ##')"
-            fi
-        fi
-    else
-        echo "${_command2}/unknown"
-    fi
-    unset _command2 _command_p
+	if [ "${1}" = 'sh' ]; then
+		_command2="$(readlink "$(which sh)")"
+		_command2="${_command2##*/}"
+	else
+		_command2="${1}"
+	fi
+	#If it is not Debian, return the unknown version directly
+	if which dpkg 2>>/dev/null 1>>/dev/null; then
+		if dpkg -s "${_command2}" 2>>/dev/null 1>>/dev/null; then
+			echo "${_command2}/$(dpkg -s "${_command2}" | grep '^Version: ' | sed 's#Version: ##')"
+		else
+			_command_p="$(which "${_command2}")"
+			if ! dpkg -S "${_command_p}" 2>>/dev/null 1>>/dev/null; then
+				echo "${_command2}/unknown"
+			else
+				_command_p="$(dpkg -S "${_command_p}")"
+				_command_p="${_command_p##*/}"
+				echo "${_command2}/$(dpkg -s "${_command_p}" | grep '^Version: ' | sed 's#Version: ##')"
+			fi
+		fi
+	else
+		echo "${_command2}/unknown"
+	fi
+	unset _command2 _command_p
 }
 
 _user_agent="$(_get_package_version 'curl') $(uname -s)/$(uname -r) $(_get_package_version "${_now_sh}") ${_command}/${_c_version}(shell script)"
 
-_remove_colon(){
-    if [ -n "${1}" ]; then
-        echo "${1}" | sed 's#^"##' | sed 's#"$##'
-    else
-        while IFS= read -r line || [ -n "$line" ]; do
-            _incoming="$_incoming$line"'\n'
-        done
-        _incoming="$(printf '%b\n' "${_incoming}")"
-        echo "${_incoming}" | sed 's#^"##' | sed 's#"$##'
-    fi
-    unset _incoming
-}
-
 _check(){
-    _id="${1}"
-    echo "${i}/${i_max}:${a}/${a_max} check: ${_area}/${_id}"
-    mkdir -p "./Recore/${_area}/"
-    if [ ! -f "./Recore/${_area}/${_id}.csv" ]; then
-        echo 'Version,id' >"./Recore/${_area}/${_id}.csv"
-    fi
-    _tmp_file="/tmp/org.nan.$(_randnum '20')"
-    t='0'
-    t_max='9'
-    while [ "${t}" -le "${t_max}" ]; do
-        curl --max-time 30 -s -L -o "${_tmp_file}" -H "user-agent: ${_user_agent}" -H 'accept: */*' -H "authorization: ${_authorization}" -H 'origin: https://apps.apple.com' "https://amp-api-edge.apps.apple.com/v1/catalog/${_area}/apps/${_id}?platform=iphone&additionalPlatforms=appletv%2Cipad%2Ciphone%2Cmac%2CrealityDevice%2Cwatch&extend=accessibility%2CaccessibilityDetails%2CageRating%2CbackgroundAssetsInfo%2CbackgroundAssetsInfoWithOptional%2CcustomArtwork%2CcustomDeepLink%2CcustomIconArtwork%2Cdescription%2CexpectedReleaseDateDisplayFormat%2CfileSizeByDevice%2CgameDisplayName%2CiconArtwork%2CinstallSizeByDeviceInBytes%2CminiGamesDeepLink%2CminimumOSVersion%2CremoteControllerRequirement%2CrequirementsByDeviceFamily%2CversionHistory&include%5Bapps%5D=app-events&availableIn%5Bapp-events%5D=future&sparseLimit%5Bapps%3Acustomers-also-bought-apps%5D=0&sparseLimit%5Bapps%3Adeveloper-other-apps%5D=0&sparseLimit%5Bapps%3Arelated-editorial-items%5D=0&limit%5Breviews%5D=1"
-        if grep -qi 'API capacity exceeded' "${_tmp_file}"; then
-            echo '[x] API capacity exceeded'
-            sleep 1
-            t="$((t+1))"
-            echo "[${t}/${t_max}] now retry"
-        else
-            break
-        fi
-    done
-    unset t t_max
-    if jq "." "${_tmp_file}" 2>>'/dev/null' 1>>/dev/null; then
-        if jq -r ".errors[].code" 2>>/dev/null | grep -q '^40400$' ; then
-            echo '[x] 40400'
-        else
-            _version="$(jq -r ".data[].attributes.platformAttributes.ios.versionHistory[0].versionDisplay" "${_tmp_file}")"
-            _version_id="$(jq -r ".data[].attributes.platformAttributes.ios.externalVersionId" "${_tmp_file}")"
-            if ! grep -q "${_version},${_version_id}" "./Recore/${_area}/${_id}.csv" 2>>/dev/null; then
-                echo "${_version},${_version_id}" >>"./Recore/${_area}/${_id}.csv"
-            fi
-        fi
-    fi
-    unset _id _version _version_id
-    rm -f "${_tmp_file}"
+	_id="${1}"
+	echo "${i}/${i_max}:${a}/${a_max} check: ${_area}/${_id}"
+	mkdir -p "./Recore/${_area}/"
+	if [ ! -f "./Recore/${_area}/${_id}.csv" ]; then
+		echo 'Version,id' >"./Recore/${_area}/${_id}.csv"
+	fi
+	_tmp_file="/tmp/org.nan.$(_randnum '20')"
+	t='0'
+	t_max='9'
+	while [ "${t}" -le "${t_max}" ]; do
+		curl --max-time 30 -s -L -o "${_tmp_file}" -H "user-agent: ${_user_agent}" -H 'accept: */*' -H "authorization: ${_authorization}" -H 'origin: https://apps.apple.com' "https://amp-api-edge.apps.apple.com/v1/catalog/${_area}/apps/${_id}?platform=iphone&additionalPlatforms=appletv%2Cipad%2Ciphone%2Cmac%2CrealityDevice%2Cwatch&extend=accessibility%2CaccessibilityDetails%2CageRating%2CbackgroundAssetsInfo%2CbackgroundAssetsInfoWithOptional%2CcustomArtwork%2CcustomDeepLink%2CcustomIconArtwork%2Cdescription%2CexpectedReleaseDateDisplayFormat%2CfileSizeByDevice%2CgameDisplayName%2CiconArtwork%2CinstallSizeByDeviceInBytes%2CminiGamesDeepLink%2CminimumOSVersion%2CremoteControllerRequirement%2CrequirementsByDeviceFamily%2CversionHistory&include%5Bapps%5D=app-events&availableIn%5Bapp-events%5D=future&sparseLimit%5Bapps%3Acustomers-also-bought-apps%5D=0&sparseLimit%5Bapps%3Adeveloper-other-apps%5D=0&sparseLimit%5Bapps%3Arelated-editorial-items%5D=0&limit%5Breviews%5D=1"
+		if grep -qi 'API capacity exceeded' "${_tmp_file}"; then
+			echo '[x] API capacity exceeded'
+			sleep 1
+			t="$((t+1))"
+			echo "[${t}/${t_max}] now retry"
+		else
+			break
+		fi
+	done
+	unset t t_max
+	if jq "." "${_tmp_file}" 2>>'/dev/null' 1>>/dev/null; then
+		if jq -r ".errors[].code" "${_tmp_file}" 2>>/dev/null | grep -q '^40400$' ; then
+			echo '[x] 40400'
+		else
+			_version="$(jq -r ".data[].attributes.platformAttributes.ios.versionHistory[0].versionDisplay" "${_tmp_file}")"
+			_version_id="$(jq -r ".data[].attributes.platformAttributes.ios.externalVersionId" "${_tmp_file}")"
+			if ! grep -q "${_version},${_version_id}" "./Recore/${_area}/${_id}.csv" 2>>/dev/null; then
+				echo "${_version},${_version_id}" >>"./Recore/${_area}/${_id}.csv"
+			fi
+		fi
+	fi
+	unset _id _version _version_id
+	rm -f "${_tmp_file}"
 }
 
 i='1'
 i_max="$(find "./appid/" -type f | wc -l)"
 while [ "${i}" -le "${i_max}" ]; do
-    a='1'
-    a_max="$(cat "$(find "./appid/" -type f | sed -n "${i}p")" | wc -l)"
-    _area="$(find "./appid/" -type f | sed -n "${i}p")"
-    _area="${_area%\.list*}"
-    _area="${_area##*\/}"
-    _file="$(find "./appid/" -type f | sed -n "${i}p")"
-    mv "${_file}" "${_file}.tmp"
-    sort -k2n "${_file}.tmp" | uniq >>"${_file}"
-    rm -f "${_file}.tmp"
-    shuf "${_file}" -o "/tmp/$$"
-    while [ "${a}" -le "${a_max}" ]; do
-        #_sleep="$(_randnum '0-2' '1')$(_randnum '0-9' '1')"
-        _sleep="$(_randnum '0-9' '1')"
-        echo "[*] wait \"${_sleep}s\"..."
-        sleep "${_sleep}"
-        unset _sleep
-        _check "$(cat "/tmp/$$" | sed -n "${a}p")"
-        a="$((a+1))"
-    done
-    rm -f "/tmp/$$"
-    unset _area _file
-    i="$((i+1))"
+	a='1'
+	a_max="$(cat "$(find "./appid/" -type f | sed -n "${i}p")" | wc -l)"
+	_area="$(find "./appid/" -type f | sed -n "${i}p")"
+	_area="${_area%\.list*}"
+	_area="${_area##*\/}"
+	_file="$(find "./appid/" -type f | sed -n "${i}p")"
+	mv "${_file}" "${_file}.tmp"
+	sort -k2n "${_file}.tmp" | uniq >>"${_file}"
+	rm -f "${_file}.tmp"
+	shuf "${_file}" -o "/tmp/$$"
+	while [ "${a}" -le "${a_max}" ]; do
+		_sleep="$(_randnum '0-9' '1')"
+		echo "[*] wait \"${_sleep}s\"..."
+		sleep "${_sleep}"
+		unset _sleep
+		_check "$(cat "/tmp/$$" | sed -n "${a}p")"
+		a="$((a+1))"
+	done
+	rm -f "/tmp/$$"
+	unset _area _file
+	i="$((i+1))"
 done
