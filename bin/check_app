@@ -2,7 +2,7 @@
 
 
 readonly _command="${0##*/}"
-readonly _c_version='0.3.2'
+readonly _c_version='0.3.2-1'
 echo "version: ${_c_version}"
 export LANG=en_US.UTF-8
 
@@ -105,6 +105,7 @@ _check(){
 		fi
 	done
 	unset t t_max
+	jq "." "${_tmp_file}"
 	if jq "." "${_tmp_file}" 2>>'/dev/null' 1>>/dev/null; then
 		_version="$(jq -r ".data[].attributes.platformAttributes.ios.versionHistory[0].versionDisplay" "${_tmp_file}")"
 		_version_id="$(jq -r ".data[].attributes.platformAttributes.ios.versionHistory[0].externalVersionId" "${_tmp_file}")"
