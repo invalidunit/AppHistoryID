@@ -2,18 +2,9 @@
 
 
 readonly _command="${0##*/}"
-readonly _c_version='0.2.8'
+readonly _c_version='0.3.0'
 echo "version: ${_c_version}"
 export LANG=en_US.UTF-8
-
-_token="$(curl -s 'https://invalidunit.github.io/token/asw')"
-if printf '%s\n' "${_token}" | jq -r ".status" | grep -q '^0$'; then
-	_authorization="Bearer $(printf '%s\n' "${_token}" | jq -r ".token")"
-	unset _token
-else
-	echo '[x] Failed to obtain token'
-	exit 1
-fi
 
 
 if [ -d '/proc/' ]; then
@@ -96,26 +87,29 @@ _check(){
 	t='0'
 	t_max='9'
 	while [ "${t}" -le "${t_max}" ]; do
-		curl --max-time 30 -s -L -o "${_tmp_file}" -H "user-agent: ${_user_agent}" -H 'accept: */*' -H "authorization: ${_authorization}" -H 'origin: https://apps.apple.com' "https://amp-api-edge.apps.apple.com/v1/catalog/${_area}/apps/${_id}?platform=iphone&additionalPlatforms=appletv%2Cipad%2Ciphone%2Cmac%2CrealityDevice%2Cwatch&extend=accessibility%2CaccessibilityDetails%2CageRating%2CbackgroundAssetsInfo%2CbackgroundAssetsInfoWithOptional%2CcustomArtwork%2CcustomDeepLink%2CcustomIconArtwork%2Cdescription%2CexpectedReleaseDateDisplayFormat%2CfileSizeByDevice%2CgameDisplayName%2CiconArtwork%2CinstallSizeByDeviceInBytes%2CminiGamesDeepLink%2CminimumOSVersion%2CremoteControllerRequirement%2CrequirementsByDeviceFamily%2CversionHistory&include%5Bapps%5D=app-events&availableIn%5Bapp-events%5D=future&sparseLimit%5Bapps%3Acustomers-also-bought-apps%5D=0&sparseLimit%5Bapps%3Adeveloper-other-apps%5D=0&sparseLimit%5Bapps%3Arelated-editorial-items%5D=0&limit%5Breviews%5D=1"
+		curl --max-time 30 -s -L -o "${_tmp_file}" -H "user-agent: ${_user_agent}" -H 'accept: */*' -H 'authorization: Bearer' -H 'Referer: https://apps.apple.com' "https://apps.apple.com/api/apps/v1/catalog/${1}/apps/${2}?platform=iphone&additionalPlatforms=appletv%2Cipad%2Ciphone%2Cmac%2CrealityDevice%2Cwatch&extend=expectedReleaseDateDisplayFormat,versionHistory"
 		if grep -qi 'API capacity exceeded' "${_tmp_file}"; then
 			echo '[x] API capacity exceeded'
-			sleep 1
-			t="$((t+1))"
+			sleep "$(_randnum '1-9' '1')"
 			echo "[${t}/${t_max}] now retry"
+			t="$((t+1))"
 		else
-			break
+			if jq "." "${_tmp_file}" >"${_cac_path}/${2}_${1}-new.js"; then
+				break
+			else
+				echo '[x] Failed to parse data, retry download...'
+				sleep "$(_randnum '1-9' '1')$(_randnum '0-9' '1')"
+				echo "[${t}/${t_max}] now retry"
+				t="$((t+1))"
+			fi
 		fi
 	done
 	unset t t_max
 	if jq "." "${_tmp_file}" 2>>'/dev/null' 1>>/dev/null; then
-		if jq -r ".errors[].code" "${_tmp_file}" 2>>/dev/null | grep -q '^40400$' ; then
-			echo '[x] 40400'
-		else
-			_version="$(jq -r ".data[].attributes.platformAttributes.ios.versionHistory[0].versionDisplay" "${_tmp_file}")"
-			_version_id="$(jq -r ".data[].attributes.platformAttributes.ios.externalVersionId" "${_tmp_file}")"
-			if ! grep -q "${_version},${_version_id}" "./Recore/${_area}/${_id}.csv" 2>>/dev/null; then
-				echo "${_version},${_version_id}" >>"./Recore/${_area}/${_id}.csv"
-			fi
+		_version="$(jq -r ".data[].attributes.platformAttributes.ios.versionHistory[0].versionDisplay" "${_tmp_file}")"
+		_version_id="$(jq -r ".data[].attributes.platformAttributes.ios.externalVersionId" "${_tmp_file}")"
+		if ! grep -q "${_version},${_version_id}" "./Recore/${_area}/${_id}.csv" 2>>/dev/null; then
+			echo "${_version},${_version_id}" >>"./Recore/${_area}/${_id}.csv"
 		fi
 	fi
 	unset _id _version _version_id
