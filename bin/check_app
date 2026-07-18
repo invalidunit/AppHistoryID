@@ -2,7 +2,7 @@
 
 
 readonly _command="${0##*/}"
-readonly _c_version='0.3.3'
+readonly _c_version='0.3.4'
 echo "version: ${_c_version}"
 export LANG=en_US.UTF-8
 
@@ -98,7 +98,7 @@ _check(){
 				break
 			else
 				echo '[x] Failed to parse data, retry download...'
-				sleep "$(_randnum '1-9' '1')$(_randnum '0-9' '1')"
+				sleep "$(_randnum '1-9' '1')"
 				echo "[${t}/${t_max}] now retry"
 				t="$((t+1))"
 			fi
